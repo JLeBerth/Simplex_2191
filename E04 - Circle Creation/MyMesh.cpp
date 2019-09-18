@@ -17,6 +17,19 @@ void MyMesh::GenerateCircle(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 		then call the AddTri function to generate a_nSubdivision number of faces
 	*/
 
+	//grab values and points we need
+	float radiansSeperation = (360.0f / a_nSubdivisions) * (PI/180.0f); //number of radians between each point
+	glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f); //the center point of the circle
+	glm::vec3 prevPoint = glm::vec3(a_fRadius, 0.0f, 0.0f); //the connecting point between the last and the next triangle, for the first triangle starts 1 radius out
+	glm::vec3 currentPoint = glm::vec3(0.0f, 0.0f, 0.0f); //the point x degrees along the circles circumference to form the next triangle
+
+	//add points to triangle
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		currentPoint = glm::vec3((a_fRadius * float(cos(radiansSeperation * (i + 1)))), (a_fRadius * float(sin(radiansSeperation * (i + 1)))), 0.0f);
+		AddTri(center, prevPoint, currentPoint);
+		prevPoint = currentPoint; //sets previous point to current point for next triangle
+	}
 	// Adding information about color
 	CompleteMesh(a_v3Color);
 	CompileOpenGL3X();
