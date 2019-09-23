@@ -18,10 +18,11 @@ class Application
 	String m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
 
 private:
-
-	int clock = 0; //checks updates to know when to move left or right
+	int clock = 0; //clock tracks time before switches direction
+	float moveBy = 0.1f; //tells invader how far to move
+	bool moveleft = false; //tells if moving left
 	std::vector<MyMesh> meshes; //vector to store all the meshes
-	std::vector<matrix4> meshLocations; //vectore to store the current locations of each cube
+	std::vector<glm::vec3> meshLocations; //vectore to store the current locations of each cube
 
 	int currentCube = 0; //tracks where we are in the vector
 	static ImGuiObject gui; //GUI object

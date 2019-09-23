@@ -24,7 +24,7 @@ void Application::InitVariables(void)
 			{
 				meshes.push_back(MyMesh());
 				meshes[currentCube].GenerateCube(0.5f, C_BLACK);
-				meshLocations.push_back(glm::translate(IDENTITY_M4, vector3(column * 0.5f, (row * -0.5f)+5.0f, 3.0f)));
+				meshLocations.push_back(glm::vec3(column * 0.5f, (row * -0.5f)+5.0f, 3.0f));
 				currentCube++;
 				
 			}
@@ -50,22 +50,15 @@ void Application::Display(void)
 
 	matrix4 m4View = m_pCameraMngr->GetViewMatrix();
 	matrix4 m4Projection = m_pCameraMngr->GetProjectionMatrix();
-
-	float moveBy = 0;
+	clock++;
+	
 	//figure out whether to move left or right
-	if (clock > 1000)
+	if (clock > 100)
 	{
+		moveleft = !moveleft;
 		clock = 0;
-		moveBy = 0.1f;
 	}
-	else if (clock > 500)
-	{
-		moveBy = -0.1f;
-	}
-	else
-	{
-		moveBy = 0.1f;
-	}
+	
 
 	for (int i = 0; i < meshes.size(); i++)
 	{
@@ -73,10 +66,18 @@ void Application::Display(void)
 		matrix4 m4Scale = glm::scale(IDENTITY_M4, vector3(1.0f, 1.0f, 1.0f));
 
 		//move
-		meshLocations[i] +=
+		if (moveleft)
+		{
+			meshLocations[i] -= glm::vec3(moveBy, 0, 0);
+		}
+		else
+		{
+			meshLocations[i] += glm::vec3(moveBy, 0, 0);
+		}
 
+		matrix4 m4Translate = glm::translate(IDENTITY_M4, meshLocations[i]);
 		//matrix4 m4Model = m4Translate * m4Scale;
-		matrix4 m4Model = m4Scale * meshLocations[i];
+		matrix4 m4Model = m4Scale * m4Translate;
 
 		meshes[i].Render(m4Projection, m4View, m4Model);
 	}
