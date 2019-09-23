@@ -18,19 +18,8 @@ class Application
 	String m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
 
 private:
-	//2d mapping array for invader
-	int invaderMap[8][11] =
-	{
-		{ 0,0,1,0,0,0,0,0,1,0,0 },
-		{ 0,0,0,1,0,0,0,1,0,0,0 },
-		{ 0,0,1,1,1,1,1,1,1,0,0 },
-		{ 0,1,1,0,1,1,1,0,1,1,0 },
-		{ 1,1,1,1,1,1,1,1,1,1,1 },
-		{ 1,0,1,1,1,1,1,1,1,0,1 },
-		{ 1,0,1,0,0,0,0,0,1,0,1 },
-		{ 0,0,0,1,1,0,1,1,0,0,0 }
-	};
 
+	int clock = 0; //checks updates to know when to move left or right
 	std::vector<MyMesh> meshes; //vector to store all the meshes
 	std::vector<matrix4> meshLocations; //vectore to store the current locations of each cube
 
