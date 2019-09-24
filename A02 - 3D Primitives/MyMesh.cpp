@@ -276,7 +276,24 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+
+	//grab values and points we need for cone
+	float radiansSeperation = (360.0f / a_nSubdivisions) * (PI / 180.0f); //number of radians between each point
+	glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f); //the center point of the circle
+	glm::vec3 prevPoint = glm::vec3(a_fRadius, 0.0f, 0.0f); //the connecting point between the last and the next triangle, for the first triangle starts 1 radius out
+	glm::vec3 currentPoint = glm::vec3(0.0f, 0.0f, 0.0f); //the point x degrees along the circles circumference to form the next triangle
+	glm::vec3 conePoint = glm::vec3(0.0f, a_fHeight, 0.0f); //the tip of the cone
+
+	//add points to cone
+	//creates a circle at the bottom, then for each triangle around the base makes the sides, goes in both directions so they ban be viewed from both sides
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		currentPoint = glm::vec3((a_fRadius * float(cos(radiansSeperation * (i + 1)))), 0.0f, (a_fRadius * float(sin(radiansSeperation * (i + 1)))));
+		AddTri(center, prevPoint, currentPoint);
+		AddTri(prevPoint, currentPoint, conePoint);
+		AddTri(currentPoint, prevPoint, conePoint);
+		prevPoint = currentPoint; //sets previous point to current point for next triangle
+	}
 	// -------------------------------
 
 	// Adding information about color
@@ -300,7 +317,36 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+
+	//grab values and points we need for cylinder
+	float radiansSeperation = (360.0f / a_nSubdivisions) * (PI / 180.0f); //number of radians between each point
+	glm::vec3 center = glm::vec3(0.0f, -a_fHeight/2.0f, 0.0f); //the center point of the circle
+	glm::vec3 centerTop = glm::vec3(0.0f, a_fHeight/2.0f, 0.0f); //the center point of the circle top circle
+	glm::vec3 prevPoint = glm::vec3(a_fRadius, -a_fHeight/2.0f, 0.0f); //the connecting point between the last and the next triangle, for the first triangle starts 1 radius out
+	glm::vec3 currentPoint = glm::vec3(0.0f, 0.0f, 0.0f); //the point x degrees along the circles circumference to form the next triangle
+	glm::vec3 prevPointTop = glm::vec3(a_fRadius, a_fHeight/2.0f, 0.0f); //the connecting point between the last and the next triangle, for the first triangle starts 1 radius out top circle
+	glm::vec3 currentPointTop = glm::vec3(0.0f, 0.0f, 0.0f); //the point x degrees along the circles circumference to form the next triangle top circle
+
+	//add points to cylinder
+	//create two circles top facing and bottom facing, then draw quads connecting them
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		//find new points
+		currentPoint = glm::vec3((a_fRadius * float(cos(radiansSeperation * (i + 1)))), -a_fHeight/2.0f, (a_fRadius * float(sin(radiansSeperation * (i + 1)))));
+		currentPointTop = glm::vec3((a_fRadius * float(cos(radiansSeperation * (i + 1)))), a_fHeight/2.0f, (a_fRadius * float(sin(radiansSeperation * (i + 1)))));
+
+		//create circle portions
+		AddTri(center, prevPoint, currentPoint);
+		AddTri(centerTop, currentPointTop, prevPointTop);
+
+		//create outer faces
+		AddQuad(prevPoint, currentPoint, prevPointTop, currentPointTop);
+		AddQuad(prevPointTop, currentPointTop, prevPoint, currentPoint);
+
+		prevPoint = currentPoint; //sets previous point to current point for next triangle
+		prevPointTop = currentPointTop; //sets previous point to current point for next triangle top circle
+	}
+
 	// -------------------------------
 
 	// Adding information about color
@@ -330,7 +376,44 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
+	//grab values and points we need for tube
+	float radiansSeperation = (360.0f / a_nSubdivisions) * (PI / 180.0f); //number of radians between each point
+	glm::vec3 prevPoint = glm::vec3(a_fInnerRadius, -a_fHeight / 2.0f, 0.0f); //the connecting point between the last and the next triangle, for the first triangle starts 1 radius out
+	glm::vec3 currentPoint = glm::vec3(0.0f, 0.0f, 0.0f); //the point x degrees along the circles circumference to form the next triangle
+	glm::vec3 prevPointTop = glm::vec3(a_fInnerRadius, a_fHeight / 2.0f, 0.0f); //the connecting point between the last and the next triangle, for the first triangle starts 1 radius out top circle
+	glm::vec3 currentPointTop = glm::vec3(0.0f, 0.0f, 0.0f); //the point x degrees along the circles circumference to form the next triangle top circle
+
+	glm::vec3 prevPointOuter = glm::vec3(a_fOuterRadius, -a_fHeight / 2.0f, 0.0f); //the connecting point between the last and the next triangle, for the first triangle starts 1 radius out
+	glm::vec3 currentPointOuter = glm::vec3(0.0f, 0.0f, 0.0f); //the point x degrees along the circles circumference to form the next triangle
+	glm::vec3 prevPointTopOuter = glm::vec3(a_fOuterRadius, a_fHeight / 2.0f, 0.0f); //the connecting point between the last and the next triangle, for the first triangle starts 1 radius out top circle
+	glm::vec3 currentPointTopOuter = glm::vec3(0.0f, 0.0f, 0.0f); //the point x degrees along the circles circumference to form the next triangle top circle
+
+	//add points to tube
+	//create two circles top facing and bottom facing, then draw quads connecting them twice
+	//afterwards create quads connecting the seperate cylinders
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		//create inner cylinder faces
+		currentPoint = glm::vec3((a_fInnerRadius * float(cos(radiansSeperation * (i + 1)))), -a_fHeight / 2.0f, (a_fInnerRadius * float(sin(radiansSeperation * (i + 1)))));
+		currentPointTop = glm::vec3((a_fInnerRadius * float(cos(radiansSeperation * (i + 1)))), a_fHeight / 2.0f, (a_fInnerRadius * float(sin(radiansSeperation * (i + 1)))));
+		AddQuad(prevPoint, currentPoint, prevPointTop, currentPointTop);
+		AddQuad(prevPointTop, currentPointTop, prevPoint, currentPoint);
+
+		//create outer cylinder faces
+		currentPointOuter = glm::vec3((a_fOuterRadius * float(cos(radiansSeperation * (i + 1)))), -a_fHeight / 2.0f, (a_fOuterRadius * float(sin(radiansSeperation * (i + 1)))));
+		currentPointTopOuter = glm::vec3((a_fOuterRadius * float(cos(radiansSeperation * (i + 1)))), a_fHeight / 2.0f, (a_fOuterRadius * float(sin(radiansSeperation * (i + 1)))));
+		AddQuad(prevPointOuter, currentPointOuter, prevPointTopOuter, currentPointTopOuter);
+		AddQuad(prevPointTopOuter, currentPointTopOuter, prevPointOuter, currentPointOuter);
+
+		//connect cylinders to make tube
+		AddQuad(prevPointOuter,currentPointOuter,prevPoint,currentPoint);
+		AddQuad(prevPointTop,currentPointTop, prevPointTopOuter, currentPointTopOuter);
+		prevPointOuter = currentPointOuter; //sets previous point to current point for next triangle outer circle
+		prevPointTopOuter = currentPointTopOuter; //sets previous point to current point for next triangle top outer circle
+		prevPoint = currentPoint; //sets previous point to current point for next triangle
+		prevPointTop = currentPointTop; //sets previous point to current point for next triangle top circle
+	}
+
 	// -------------------------------
 
 	// Adding information about color
@@ -387,7 +470,55 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+	//grab values and points we need for sphere
+	float radiansSeperation = (360.0f / a_nSubdivisions) * (PI / 180.0f); //number of radians between each point
+	float radiansSeperationHalf = (180 / a_nSubdivisions) * (PI / 180.0f); //radians between points along one half of the circle such that we can divide vertically
+	float baseRadian = (-180.0f) * (PI / 180.0f); //radian measurement of bottom point to move up from
+
+	glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f); //the center point of the circle
+	glm::vec3 bottom = glm::vec3(0.0f, -a_fRadius, 0.0f); //the bottom of the sphere
+	glm::vec3 top = glm::vec3(0.0f, a_fRadius, 0.0f); //the top of the sphere
+	glm::vec3 prevPoint = glm::vec3(a_fRadius, 0.0f, 0.0f); //the connecting point between the last and the next triangle, for the first triangle starts 1 radius out
+	glm::vec3 currentPoint = glm::vec3(0.0f, 0.0f, 0.0f); //the point x degrees along the circles circumference to form the next triangle
+
+
+	glm::vec3 currentCenter = center; //the center of the current circle used for partitioning the sphere
+	float currentRadius = a_fRadius; //the radius of the current circle used for partitioning the sphere
+
+	//add points to sphere
+	//creates circles connecting to previous circles as well as top and bottom
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+
+		currentCenter = glm::vec3(0.0f, a_fRadius * float(sin((radiansSeperationHalf * (i+1))+baseRadian)), 0.0f); //find out new center
+		
+		glm::vec3 surfacePoint = (glm::vec3(a_fRadius * float(cos((radiansSeperationHalf * (i+1)) + baseRadian)), 
+			a_fRadius * float(sin((radiansSeperationHalf * (i + 1)) + baseRadian)), 0.0f)); //finds surface area point  at same vertical height as our new center
+
+		currentRadius = glm::length(surfacePoint - currentCenter); //find radius of current circle
+
+		prevPoint = glm::vec3(currentRadius, currentCenter.y, 0.0f);
+
+		for (int j = 0; j < a_nSubdivisions; j++)
+		{
+			currentPoint = glm::vec3((currentRadius * float(cos(radiansSeperation * (j + 1)))), currentCenter.y, (currentRadius * float(sin(radiansSeperation * (j + 1)))));
+
+			if (i == 0)
+			{
+				AddTri(bottom, currentPoint, prevPoint);
+			}
+			else if (i == a_nSubdivisions - 1)
+			{
+				AddTri(top, prevPoint, currentPoint);
+			}
+			else
+			{
+
+			}
+			prevPoint = currentPoint;
+		}
+
+	}
 	// -------------------------------
 
 	// Adding information about color
