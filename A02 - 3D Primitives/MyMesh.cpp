@@ -445,7 +445,7 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
+	//I had attempted this and just did it completely wrong so not doing the extra credit yall.
 	// -------------------------------
 
 	// Adding information about color
@@ -471,53 +471,56 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 
 	// Replace this with your code
 	//grab values and points we need for sphere
-	float radiansSeperation = (360.0f / a_nSubdivisions) * (PI / 180.0f); //number of radians between each point
-	float radiansSeperationHalf = (180 / a_nSubdivisions) * (PI / 180.0f); //radians between points along one half of the circle such that we can divide vertically
-	float baseRadian = (-180.0f) * (PI / 180.0f); //radian measurement of bottom point to move up from
+	//also in the hours I spent working on sphere, somebody told me that cosf and sinf were equations and that I didn't need to cast to float each time
+	//which is nice
+	float radiansSeperation = (360 / a_nSubdivisions) * (PI / 180);
+	float radiansSeperationHalf(PI / a_nSubdivisions);
 
-	glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f); //the center point of the circle
-	glm::vec3 bottom = glm::vec3(0.0f, -a_fRadius, 0.0f); //the bottom of the sphere
-	glm::vec3 top = glm::vec3(0.0f, a_fRadius, 0.0f); //the top of the sphere
-	glm::vec3 prevPoint = glm::vec3(a_fRadius, 0.0f, 0.0f); //the connecting point between the last and the next triangle, for the first triangle starts 1 radius out
-	glm::vec3 currentPoint = glm::vec3(0.0f, 0.0f, 0.0f); //the point x degrees along the circles circumference to form the next triangle
+	//three points that we will change in recurison to draw all triangles of the sphere
+	glm::vec3 firstPoint;
+	glm::vec3 secondPoint;
+	glm::vec3 thirdPoint;
 
-
-	glm::vec3 currentCenter = center; //the center of the current circle used for partitioning the sphere
-	float currentRadius = a_fRadius; //the radius of the current circle used for partitioning the sphere
-
-	//add points to sphere
-	//creates circles connecting to previous circles as well as top and bottom
-	for (int i = 0; i < a_nSubdivisions; i++)
+	for (int i = 0; i <= a_nSubdivisions; i++)
 	{
+		//start at point at top of sphere
+		firstPoint = glm::vec3(0.0f, a_fRadius, 0.0f);
+		//find next two points based off of 3D trig
+		secondPoint = glm::vec3(a_fRadius * sinf(radiansSeperation * i) * sinf(radiansSeperationHalf),
+			a_fRadius * cosf(radiansSeperationHalf), a_fRadius * cosf(radiansSeperation * i) * sinf(radiansSeperationHalf));
 
-		currentCenter = glm::vec3(0.0f, a_fRadius * float(sin((radiansSeperationHalf * (i+1))+baseRadian)), 0.0f); //find out new center
-		
-		glm::vec3 surfacePoint = (glm::vec3(a_fRadius * float(cos((radiansSeperationHalf * (i+1)) + baseRadian)), 
-			a_fRadius * float(sin((radiansSeperationHalf * (i + 1)) + baseRadian)), 0.0f)); //finds surface area point  at same vertical height as our new center
+		thirdPoint = glm::vec3(a_fRadius * sinf(radiansSeperation * (i+1)) * sinf(radiansSeperationHalf),
+			a_fRadius * cosf(radiansSeperationHalf), a_fRadius * cosf(radiansSeperation * (i+1)) * sinf(radiansSeperationHalf));
 
-		currentRadius = glm::length(surfacePoint - currentCenter); //find radius of current circle
+		//add first tri
+		AddTri(firstPoint, secondPoint, thirdPoint);
 
-		prevPoint = glm::vec3(currentRadius, currentCenter.y, 0.0f);
-
-		for (int j = 0; j < a_nSubdivisions; j++)
+		for (int j = 0; j <= a_nSubdivisions - 1; j++)
 		{
-			currentPoint = glm::vec3((currentRadius * float(cos(radiansSeperation * (j + 1)))), currentCenter.y, (currentRadius * float(sin(radiansSeperation * (j + 1)))));
 
-			if (i == 0)
-			{
-				AddTri(bottom, currentPoint, prevPoint);
-			}
-			else if (i == a_nSubdivisions - 1)
-			{
-				AddTri(top, prevPoint, currentPoint);
-			}
-			else
-			{
+			//move firstpoint around circle
+			firstPoint = glm::vec3(a_fRadius * sinf(radiansSeperation * i) * sinf(radiansSeperationHalf*(j+1)),
+				a_fRadius * cosf(radiansSeperationHalf * (j+1)), a_fRadius * cosf(radiansSeperation * i) * sinf(radiansSeperationHalf * (j+1)));
+			
+			//add current tri
+			AddTri(firstPoint, thirdPoint, secondPoint);
 
-			}
-			prevPoint = currentPoint;
+			//move secondpoint around circle
+			secondPoint = glm::vec3(a_fRadius * sinf(radiansSeperation * (i+1)) * sinf(radiansSeperationHalf * (j + 1)),
+				a_fRadius * cosf(radiansSeperationHalf * (j + 1)), a_fRadius * cosf(radiansSeperation * (i+1)) * sinf(radiansSeperationHalf * (j + 1)));
+
+			//add next tri
+			AddTri(firstPoint, secondPoint, thirdPoint);
+
+			//move points backwards
+			thirdPoint = secondPoint;
+			secondPoint = firstPoint;
 		}
 
+		//set firstpoint to top point
+		firstPoint = glm::vec3(0.0f, -a_fRadius, 0.0f);
+		//add final tri for current ring
+		AddTri(firstPoint, secondPoint, thirdPoint);
 	}
 	// -------------------------------
 
