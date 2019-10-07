@@ -51,24 +51,32 @@ void Application::Display(void)
 	default:
 	case 1:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPositionTargetAndUpward(AXIS_Z * 10.0f, ZERO_V3, AXIS_Y);
 		break;
 	case 2:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPerspective(false);
 		break;
 	case 3:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPositionTargetAndUpward(AXIS_X * 20.0f, ZERO_V3, -AXIS_Z);
 		break;
 	case 4:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPositionTargetAndUpward(AXIS_Z * -15.0f, ZERO_V3, AXIS_Y);
 		break;
 	case 5:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPositionTargetAndUpward(AXIS_Z * -10.0f, ZERO_V3, AXIS_Y);
+
 		break;
 	case 6:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPositionTargetAndUpward(AXIS_Z * 1, AXIS_Z * -10, AXIS_Y);
 		break;
 	case 7:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPositionTargetAndUpward(AXIS_Z * 10.0f, ZERO_V3, -AXIS_Y);
 		break;
 	}
 
