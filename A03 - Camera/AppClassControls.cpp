@@ -368,8 +368,22 @@ void Application::CameraRotation(float a_fSpeed)
 		fDeltaMouse = static_cast<float>(MouseY - CenterY);
 		fAngleX += fDeltaMouse * a_fSpeed;
 	}
+	
 	//Change the Yaw and the Pitch of the camera
+	m_pCamera->xRot -= 20 * fAngleX;
+	m_pCamera->yRot -= 20 * fAngleY;
+
+	if (m_pCamera->xRot > 90)
+	{
+		m_pCamera->xRot = 90;
+	}
+	else if (m_pCamera->xRot < -90)
+	{
+		m_pCamera->xRot = -90;
+	}
 	SetCursorPos(CenterX, CenterY);//Position the mouse in the center
+
+
 }
 //Keyboard
 void Application::ProcessKeyboard(void)

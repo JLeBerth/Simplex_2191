@@ -132,21 +132,23 @@ void Simplex::MyCamera::SetPositionTargetAndUpward(vector3 a_v3Position, vector3
 void Simplex::MyCamera::CalculateViewMatrix(void)
 {
 	//Calculate the look at most of your assignment will be reflected in this method
-	
+	//find foward vector
+	glm::vec3 forward = glm::normalize(m_v3Position - m_v3Target);
+
 	//calculate the xRotation in radians
-	float xRotation = 1 * (PI / 180);
+	float xRotation = xRot * (PI / 180);
 
 	//calculate the yRotation in radians
-	float yRotation = 2 * (PI / 180);
+	float yRotation = yRot * (PI / 180);
 
 	//calculate the x of the target
-	float targetX = cosf(yRotation) * cos(xRotation);
+	float targetX = cosf(xRotation) * cosf(yRotation);
 	//calculate the y of the target
-	float targetY = sinf(yRotation);
+	float targetY = sinf(xRotation);
 	//calculate the z of the target
-	float targetZ = cosf(yRotation) * cosf(xRotation);
+	float targetZ = cosf(xRotation) * sin(yRotation);
 
-	m_v3Target = glm::vec3(targetX, targetY, targetZ);
+	m_v3Target = m_v3Position + glm::normalize(glm::vec3(targetX, targetY, targetZ));
 
 	m_m4View = glm::lookAt(m_v3Position, m_v3Target, glm::normalize(m_v3Above - m_v3Position)); //position, target, upward
 }

@@ -230,9 +230,12 @@ public:
 	OUTPUT: ---
 	*/
 	void MoveSideways(float a_fDistance = 0.1f);
-};
 
-} //namespace Simplex
+	float xRot = 0.0f;
+	float yRot = 0.0f;
+}
+
+; } //namespace Simplex
 
 #endif //__MYCAMERACLASS_H_
 
