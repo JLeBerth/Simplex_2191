@@ -132,6 +132,22 @@ void Simplex::MyCamera::SetPositionTargetAndUpward(vector3 a_v3Position, vector3
 void Simplex::MyCamera::CalculateViewMatrix(void)
 {
 	//Calculate the look at most of your assignment will be reflected in this method
+	
+	//calculate the xRotation in radians
+	float xRotation = 1 * (PI / 180);
+
+	//calculate the yRotation in radians
+	float yRotation = 2 * (PI / 180);
+
+	//calculate the x of the target
+	float targetX = cosf(yRotation) * cos(xRotation);
+	//calculate the y of the target
+	float targetY = sinf(yRotation);
+	//calculate the z of the target
+	float targetZ = cosf(yRotation) * cosf(xRotation);
+
+	m_v3Target = glm::vec3(targetX, targetY, targetZ);
+
 	m_m4View = glm::lookAt(m_v3Position, m_v3Target, glm::normalize(m_v3Above - m_v3Position)); //position, target, upward
 }
 
@@ -150,13 +166,61 @@ void Simplex::MyCamera::CalculateProjectionMatrix(void)
 	}
 }
 
+//move forward method calculates the cameras forward and moves a distance along it
 void MyCamera::MoveForward(float a_fDistance)
 {
-	//The following is just an example and does not take in account the forward vector (AKA view vector)
-	m_v3Position += vector3(0.0f, 0.0f,-a_fDistance);
-	m_v3Target += vector3(0.0f, 0.0f, -a_fDistance);
-	m_v3Above += vector3(0.0f, 0.0f, -a_fDistance);
+	//find foward vector
+	glm::vec3 forward = glm::normalize(m_v3Position - m_v3Target);
+
+	//move camera along forwards
+	m_v3Position += -1 * (forward * a_fDistance);
+	//move camera target along forwards
+	m_v3Target += -1 * (forward * a_fDistance);
+	//move camera above along forwards
+	m_v3Above += -1 * (forward * a_fDistance);
 }
 
-void MyCamera::MoveVertical(float a_fDistance){}//Needs to be defined
-void MyCamera::MoveSideways(float a_fDistance){}//Needs to be defined
+//move vertical method calculates the cameras up and moves a distance along it
+void MyCamera::MoveVertical(float a_fDistance)
+{
+	//find foward vector
+	glm::vec3 forward = glm::normalize(m_v3Position - m_v3Target);
+
+	//define up vector used to find right vector
+	glm::vec3 upwards = glm::vec3(0.0f, 1.0f, 0.0f);
+
+	//take cross product of up and forwards vector to find right vector
+	glm::vec3 right = glm::normalize(glm::cross(upwards, forward));
+
+	//take cross product of the forwards vector and right vector to find up vector
+	glm::vec3 upward = glm::normalize(glm::cross(forward, right));
+
+	//move position by distance towards the up
+	m_v3Position += glm::normalize(upward) * a_fDistance;
+	//move target by the distance towards the up
+	m_v3Target += glm::normalize(upward) * a_fDistance;
+	//move the above to follow camera
+	m_v3Above += glm::normalize(upward) * a_fDistance;
+}
+
+//move sideways method calculates the cameras right and moves a distance along it
+void MyCamera::MoveSideways(float a_fDistance)
+{
+	//find foward vector
+	glm::vec3 forward = glm::normalize(m_v3Position - m_v3Target);
+
+	//define up vector used to find right vector
+	glm::vec3 upwards = glm::vec3(0.0f, 1.0f, 0.0f);
+
+	//take cross product of up and forwards vector to find right vector
+	glm::vec3 right = glm::normalize(glm::cross(upwards, forward));
+
+	//move camera forward
+	m_v3Position += (right * a_fDistance);
+	//move camera target forward
+	m_v3Target += (right * a_fDistance);
+	//move camera above forward
+	m_v3Above += (right * a_fDistance);
+
+
+}
