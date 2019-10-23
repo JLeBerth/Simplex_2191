@@ -286,6 +286,69 @@ uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 	Simplex that might help you [eSATResults] feel free to use it.
 	(eSATResults::SAT_NONE has a value of 0)
 	*/
+	
+	//declare floats needed for tests
+	float radiusA;
+	float radiusB;
+
+	glm::mat3x3 rotation;
+	glm::mat3x3 absoluteRotation;
+
+	glm::vec3 translation;
+
+	glm::vec3 coordAxis[3];
+	glm::vec3 coordAxisOther[3];
+
+	//find the coordinate Axis of the two rigidbodies
+	coordAxis[0] = m_m4ToWorld * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	coordAxis[1] = m_m4ToWorld * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	coordAxis[2] = m_m4ToWorld * glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+
+	coordAxisOther[0] = a_pOther->m_m4ToWorld * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	coordAxisOther[1] = a_pOther->m_m4ToWorld * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	coordAxisOther[2] = a_pOther->m_m4ToWorld * glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+
+
+	//find the rotation matrix 
+	for (int i = 0; i < 3; i++)
+	{
+		for (int l = 0; l < 3; l++)
+		{
+			rotation[i][l] = glm::dot(coordAxis[i], coordAxisOther[l]);
+		}
+	}
+
+	//calculate translation vector
+	translation = a_pOther->m_v3Center - m_v3Center;
+
+	//bring translation into coordinate frame
+	translation = glm::vec3(glm::dot(translation, coordAxis[0]),glm::dot(translation, coordAxis[1]),glm::dot(translation, coordAxis[2]));
+	
+	//following the textbooks instructions doing this step to counteract
+	//arithmetic errors, not entirely sure what an epsilon is
+	for (int i = 0; i < 3; i++)
+	{
+		for (int l = 0; l < 3; l++)
+		{
+			absoluteRotation[i][l] = glm::abs(rotation[i][l]) + FLT_EPSILON;
+		}
+	}
+	
+	//test A0, A1, and A2 axis
+	for (int i = 0; i > 3; i++)
+	{
+		radiusA = m_v3HalfWidth[i];
+		radiusB = a_pOther->m_v3HalfWidth[0] * absoluteRotation[i][0]
+			+ a_pOther->m_v3HalfWidth[1] * absoluteRotation[i][1]
+			+ a_pOther->m_v3HalfWidth[2] * absoluteRotation[i][2];
+		if (glm::abs(translation[i]) > radiusA + radiusB)
+		{
+			return 1;
+		}
+	}
+
+	//return 0 if axis of seperation are found and code has not already existed
+	return 0;
 
 	//there is no axis test that separates this two objects
 	return eSATResults::SAT_NONE;
