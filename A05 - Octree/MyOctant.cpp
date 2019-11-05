@@ -12,6 +12,7 @@ Simplex::MyOctant::MyOctant(uint a_nMaxLevel, uint a_nIdealEntityCount)
 	//if the root then add every entity to the entity list
 	if (m_pParent == NULL)
 	{
+		m_uLevel = 1;
 		for (int i = 0; i < m_pEntityMngr->GetEntityCount(); i++)
 		{
 			m_EntityList.push_back(i);
@@ -47,12 +48,12 @@ Simplex::MyOctant::MyOctant(MyOctant const& other)
 {
 
 }
-
+/*
 MyOctant& Simplex::MyOctant::operator=(MyOctant const& other)
 {
 	// TODO: insert return statement here
 }
-
+*/
 
 Simplex::MyOctant::~MyOctant(void)
 {
@@ -143,26 +144,61 @@ bool Simplex::MyOctant::IsColliding(uint a_uRBIndex)
 
 void Simplex::MyOctant::Display(uint a_nIndex, vector3 a_v3Color)
 {
+	for (uint i = 0; i < m_uChildren; i++)
+	{
+		m_pChild[i]->Display(a_nIndex, a_v3Color);
+	}
+	if (m_uID == a_nIndex)
+	{
+		m_pMeshMngr->AddWireCubeToRenderList(
+			glm::translate(IDENTITY_M4, m_v3Center) * glm::scale(vector3(m_fSize)),
+			a_v3Color, RENDER_WIRE
+		);
+	}
+	return;
 }
 
 void Simplex::MyOctant::Display(vector3 a_v3Color)
 {
-
+	for (uint i = 0; i < m_uChildren; i++)
+	{
+		m_pChild[i]->Display(a_v3Color);
+	}
+	m_pMeshMngr->AddWireCubeToRenderList(
+		glm::translate(IDENTITY_M4, m_v3Center) * glm::scale(vector3(m_fSize)),
+		a_v3Color, RENDER_WIRE
+	);
+	return;
 }
 
 void Simplex::MyOctant::DisplayLeafs(vector3 a_v3Color)
 {
+	for (uint i = 0; i < m_uChildren; i++)
+	{
+		m_pChild[i]->DisplayLeafs(a_v3Color);
+	}
+	if (IsLeaf())
+	{
+		m_pMeshMngr->AddWireCubeToRenderList(
+			glm::translate(IDENTITY_M4, m_v3Center) * glm::scale(vector3(m_fSize)),
+			a_v3Color, RENDER_WIRE
+		);
+	}
+	return;
 }
 
 //traverses the tree and clears entity lists for each node
 void Simplex::MyOctant::ClearEntityList(void)
 {
 	m_EntityList.clear();
-	for (int i = 0; i < 8; i++)
+	if (!IsLeaf())
 	{
-		if (m_pChild[i] != NULL)
+		for (int i = 0; i < 8; i++)
 		{
-			m_pChild[i]->ClearEntityList();
+			if (m_pChild[i] != NULL)
+			{
+				m_pChild[i]->ClearEntityList();
+			}
 		}
 	}
 }
@@ -209,7 +245,9 @@ void Simplex::MyOctant::Subdivide(void)
 		newCenter = m_v3Center + (direction * newSize);
 		m_pChild[i] = new MyOctant(newCenter, newSize);
 		m_pChild[i]->m_pParent = this;
+		m_pChild[i]->m_uLevel = this->m_uLevel + 1;
 	}
+	m_uChildren = 8;
 }
 
 //returns the pointer to the specific child
@@ -231,7 +269,7 @@ MyOctant* Simplex::MyOctant::GetParent(void)
 //returns whether or not the octant is a leaf
 bool Simplex::MyOctant::IsLeaf(void)
 {
-	if (m_pChild[0] == NULL)
+	if (m_uChildren == 0)
 	{
 		return true;
 	}
@@ -265,11 +303,14 @@ void Simplex::MyOctant::AssignIDtoEntity(void)
 uint Simplex::MyOctant::GetOctantCount(void)
 {
 	uint count = 0;
-	for(int i=0; i < 8; i++)
+	if (!IsLeaf())
 	{
-		if (m_pChild[i] != NULL)
+		for (int i = 0; i < 8; i++)
 		{
-			count += m_pChild[i]->GetOctantCount();
+			if (m_pChild[i] != NULL)
+			{
+				count += m_pChild[i]->GetOctantCount();
+			}
 		}
 	}
 	count++;
