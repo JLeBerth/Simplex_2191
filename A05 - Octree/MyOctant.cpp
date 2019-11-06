@@ -3,143 +3,256 @@ using namespace Simplex;
 
 //Constructor, will create an octant containing all MagnaEntities Instances in the Mesh
 //manager	currently contains
-Simplex::MyOctant::MyOctant(uint a_nMaxLevel, uint a_nIdealEntityCount)
+
+//method to initialize values
+void MyOctant::Init()
 {
 	//get a reference to the entity manager and mesh manager
 	m_pEntityMngr = MyEntityManager::GetInstance();
 	m_pMeshMngr = MeshManager::GetInstance();
 
-	//if the root then add every entity to the entity list
-	if (m_pParent == NULL)
+	//declare children and other setup 
+	m_uChildren = 0;
+	m_uLevel = 0;
+	m_uID = m_uOctantCount;
+
+	m_v3Center = vector3(0.0f, 0.0f, 0.0f);
+	m_v3Max = vector3(0.0f, 0.0f, 0.0f);
+	m_v3Min = vector3(0.0f, 0.0f, 0.0f);
+
+	//set all pointers to null
+	m_pRoot = nullptr;
+	m_pParent = nullptr;
+
+	for (int i = 0; i < 8; i++)
 	{
-		m_uLevel = 1;
-		for (int i = 0; i < m_pEntityMngr->GetEntityCount(); i++)
-		{
-			m_EntityList.push_back(i);
-		}
+		m_pChild[i] = nullptr;
 	}
 
-	//get max min and size
-	m_v3Max = GetMaxGlobal();
-	m_v3Min = GetMinGlobal();
-	m_v3Center = GetCenterGlobal();
-	m_fSize = GetSize();
-
-
-
 }
-//Constructor will create an octant within a specific space
-Simplex::MyOctant::MyOctant(vector3 a_v3Center, float a_fSize)
-{
-	//get a reference to the entity manager and mesh manager
-	m_pEntityMngr = MyEntityManager::GetInstance();
-	m_pMeshMngr = MeshManager::GetInstance();
 
-	//assign center and size
+//deleter method
+void MyOctant::Release()
+{
+	//set all values to 0
+	m_uChildren = 0;
+	m_fSize = 0;
+	m_EntityList.clear();
+	m_lChild.clear();
+	//if the root kill branches
+	if (m_uLevel = 0)
+	{
+		KillBranches;
+	}
+}
+
+//myoctant constructor for root
+MyOctant::MyOctant(uint a_nMaxLevel, uint a_nIdealEntityCout)
+{
+	//initialize octree
+	Init();
+
+	//read in new values
+	m_uMaxLevel = a_nMaxLevel;
+	m_uIdealEntityCount = a_nIdealEntityCout;
+	m_uID = m_uOctantCount;
+
+	//set this to root
+	m_pRoot = this;
+
+	//read in the points of every min and max as vectors on a shape to create a large shape, then ge thte min and max of that shape
+	std::vector<vector3> allPoints;
+
+	uint entities = m_pEntityMngr->GetEntityCount();
+
+	for (int i = 0; i < entities; i++)
+	{
+		//get the rigid body from the entity list
+		MyEntity* entityPointer = m_pEntityMngr->GetEntity(i);
+		MyRigidBody* rigidBodyPointer = entityPointer->GetRigidBody();
+
+		//get the min and max from the rigidbody
+
+		allPoints.push_back(rigidBodyPointer->GetMaxGlobal());
+		allPoints.push_back(rigidBodyPointer->GetMinGlobal());
+	}
+	MyRigidBody* rigidbodyPointer = new MyRigidBody(allPoints);
+
+	//set size to x length, then check it against the y and z and change to those if they are larger
+	vector3 sizelength = rigidbodyPointer->GetHalfWidth();
+	float size = sizelength.x;
+
+	if (sizelength.y > size)
+	{
+		size = sizelength.y;
+	}
+	if (sizelength.z > size)
+	{
+		size = sizelength.z;
+	}
+
+	//get center of rigidbody
+	m_v3Center = rigidbodyPointer->GetCenterLocal();
+	
+	//values no longer needed clean up
+	SafeDelete(rigidbodyPointer);
+	allPoints.clear();
+
+	//use gotten values
+	m_fSize = size * 2;
+	m_v3Max = m_v3Center + vector3(size);
+	m_v3Min = m_v3Center - vector3(size);
+
+	//increment octant count
+	m_uOctantCount += 1;
+
+	ConstructTree(m_uMaxLevel);
+}
+
+//myoctant constructor for branches
+MyOctant::MyOctant(vector3 a_v3Center, float a_fSize)
+{
+	//initialize values
+	Init();
 	m_v3Center = a_v3Center;
 	m_fSize = a_fSize;
 
-	//find min and max based on center and size
-	m_v3Max = m_v3Center + (glm::normalize(vector3(1.0f, 1.0f, 1.0f)) * m_fSize);
-	m_v3Min = m_v3Center + (glm::normalize(vector3(1.0f, 1.0f, 1.0f)) * -m_fSize);
+	m_v3Min = m_v3Center - vector3((m_fSize / 2.0f));
+	m_v3Max = m_v3Center + vector3((m_fSize / 2.0f));
+
+	m_uOctantCount;
 }
 
-Simplex::MyOctant::MyOctant(MyOctant const& other)
+//myoctant copyconstructor
+MyOctant::MyOctant(MyOctant const& other)
 {
 
-}
-/*
-MyOctant& Simplex::MyOctant::operator=(MyOctant const& other)
-{
-	// TODO: insert return statement here
-}
-*/
+	m_uID = other.m_uID; 
+	m_uLevel = other.m_uLevel; 
 
-Simplex::MyOctant::~MyOctant(void)
-{
+	for (int i = 0; i < 8; i++)
+	{
+		m_pChild[i] = other.m_pChild[i];
+	}
+	m_lChild = other.m_lChild;
+	m_uChildren = other.m_uChildren;
+
+	m_fSize = other.m_fSize; 
+
+	m_pMeshMngr = nullptr;
+	m_pEntityMngr = nullptr; 
+
+	m_v3Center = other.m_v3Center;
+	m_v3Min = other.m_v3Min;
+	m_v3Max = other.m_v3Max;
+
+	m_pParent = other.m_pParent;
+	m_uID = other.m_uID;
+	m_uLevel = other.m_uLevel;
+	m_pRoot = other.m_pRoot;
+
+	m_pMeshMngr = MeshManager::GetInstance();
+	m_pEntityMngr = MyEntityManager::GetInstance();
 }
 
+//myoctant set & operator, creates an & call for the octant
+MyOctant& MyOctant::operator=(MyOctant const& other)
+{
+	//swap if needed then return 
+	if (this != &other)
+	{
+		Release();
+		Init();
+		MyOctant temp(other);
+		Swap(temp);
+	}
+	return *this;
+}
+
+//set release to the deleter
+MyOctant::~MyOctant()
+{
+	Release();
+}
+
+//swap statement for myoctant
 void Simplex::MyOctant::Swap(MyOctant& other)
 {
 }
 
+//returns the octants size
 float Simplex::MyOctant::GetSize(void)
 {
-	//finds size based on min and max
-	return glm::length((m_v3Max - m_v3Min) / 2.0f);
+	return m_fSize;
 }
 
+//returns the octants center
 vector3 Simplex::MyOctant::GetCenterGlobal(void)
 {
-	//returns the center based on min and max
-	return (m_v3Max + m_v3Min) / 2.0f;
+	return m_v3Center;
 }
 
+//returns the octants min
 vector3 Simplex::MyOctant::GetMinGlobal(void)
 {
-	float vecX = INT_MAX;
-	float vecY = INT_MAX;
-	float vecZ = INT_MAX;
-	if (m_pParent == NULL)
-	{
-		for each (uint thisID in m_EntityList)
-		{
-			MyEntity* thisEntity = m_pEntityMngr->GetEntity(thisID);
-			MyRigidBody thisRigidbody = *thisEntity->GetRigidBody();
-			vector3 thisMax = thisRigidbody.GetMaxGlobal();
-
-			if (thisMax.x < vecX)
-			{
-				vecX = thisMax.x;
-			}
-			if (thisMax.y < vecY)
-			{
-				vecY = thisMax.y;
-			}
-			if (thisMax.z < vecZ)
-			{
-				vecZ = thisMax.z;
-			}
-		}
-	}
-
-	return vector3(vecX, vecY, vecZ);
+	return m_v3Min;
 }
 
+//returns the octants max
 vector3 Simplex::MyOctant::GetMaxGlobal(void)
 {
-	float vecX = INT_MIN;
-	float vecY = INT_MIN;
-	float vecZ = INT_MIN;
-	if (m_pParent == NULL)
-	{
-		for each (uint thisID in m_EntityList)
-		{
-			MyEntity *thisEntity = m_pEntityMngr->GetEntity(thisID);
-			MyRigidBody thisRigidbody = *thisEntity->GetRigidBody();
-			vector3 thisMax = thisRigidbody.GetMaxGlobal();
-
-			if (thisMax.x > vecX)
-			{
-				vecX = thisMax.x;
-			}
-			if (thisMax.y > vecY)
-			{
-				vecY = thisMax.y;
-			}
-			if (thisMax.z > vecZ)
-			{
-				vecZ = thisMax.z;
-			}
-		}
-	}
-
-	return vector3(vecX, vecY, vecZ);
+	return m_v3Max;
 }
 
+//collision logic for the octant, determines if any points are colliding, aabb taken from myrigidbody.cpp
 bool Simplex::MyOctant::IsColliding(uint a_uRBIndex)
 {
-	return false;
+	//check to see if the object is in the octree area
+	uint nObjectCount = m_pEntityMngr->GetEntityCount();
+	if (a_uRBIndex >= nObjectCount)
+	{
+		return false;
+	}
+
+	//get objects min and max to check for collision
+	MyEntity* entityPointer = m_pEntityMngr->GetEntity(a_uRBIndex);
+	MyRigidBody* rigidbodyPointer = entityPointer->GetRigidBody();
+	vector3 otherMin = rigidbodyPointer->GetMinGlobal();
+	vector3 otherMax = rigidbodyPointer->GetMaxGlobal();
+
+	bool colliding = true;
+
+	//check x
+	if (m_v3Max.x < otherMin.x)
+	{
+		colliding = false;
+	}
+	if (m_v3Min.x > otherMax.x)
+	{
+		colliding = false;
+	}
+
+	//check y
+	if (m_v3Max.y < otherMin.y)
+	{
+		colliding = false;
+	}
+	if (m_v3Min.y > otherMax.y)
+	{
+		colliding = false;
+	}
+
+	//check z
+	if (m_v3Max.z < otherMin.z)
+	{
+		colliding = false;
+	}
+	if (m_v3Min.z > otherMax.z)
+	{
+		colliding = false;
+	}
+
+	return colliding;
 }
 
 void Simplex::MyOctant::Display(uint a_nIndex, vector3 a_v3Color)
@@ -253,17 +366,17 @@ void Simplex::MyOctant::Subdivide(void)
 //returns the pointer to the specific child
 MyOctant* Simplex::MyOctant::GetChild(uint a_nChild)
 {
+	if (a_nChild > 7 || a_nChild < 0)
+	{
+		return nullptr;
+	}
 	return m_pChild[a_nChild];
 }
 
 //returns the pointer to the parent if not null
 MyOctant* Simplex::MyOctant::GetParent(void)
 {
-	if (m_pParent != NULL)
-	{
-		return m_pParent;
-	}
-	return nullptr;
+	return m_pParent;
 }
 
 //returns whether or not the octant is a leaf
@@ -280,15 +393,34 @@ bool Simplex::MyOctant::IsLeaf(void)
 //returns true if the octant contains more then a certain number of entities
 bool Simplex::MyOctant::ContainsMoreThan(uint a_nEntities)
 {
-	if (m_EntityList.size() > a_nEntities)
+	uint entities = 0;
+	int objects = m_pEntityMngr->GetEntityCount();
+
+	//if the object is in the area then increase the contains number, then return true if greater then the sought number
+	for (int i = 0; i < objects; i++)
 	{
-		return true;
+		if (IsColliding(i))
+		{
+			entities += 1;
+		}
+		if (entities > a_nEntities)
+		{
+			return true;
+		}
 	}
 	return false;
 }
 
+//delete children, and their children, works from the bottom up
 void Simplex::MyOctant::KillBranches(void)
 {
+	for (int i = 0; i < m_uChildren; i++)
+	{
+		m_pChild[i]->KillBranches();
+		delete m_pChild[i];
+		m_pChild[i] = nullptr;
+	}
+	m_uChildren = 0;
 }
 
 void Simplex::MyOctant::ConstructTree(uint a_nMaxLevel)
